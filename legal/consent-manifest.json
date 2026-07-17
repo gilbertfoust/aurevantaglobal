@@ -1,0 +1,50 @@
+{
+  "effective_date": "2026-07-16",
+  "documents": {
+    "client_service_agreement": "AGS-CSA-2026-07-16-v1",
+    "privacy_policy": "AGS-PRIV-2026-07-16-v1",
+    "refund_cancellation_policy": "AGS-RCP-2026-07-16-v1",
+    "media_upload_authorization": "AGS-MUA-2026-07-16-v1"
+  },
+  "required_acceptances": [
+    "client_service_agreement",
+    "privacy_policy",
+    "refund_cancellation_policy",
+    "electronic_signature_and_authority",
+    "estimate_scope_and_no_guarantee",
+    "ai_subcontractor_and_platform_acknowledgment"
+  ],
+  "conditional_acceptances": {
+    "media_upload_authorization": [
+      "Media Package",
+      "corporate photography",
+      "drone photography",
+      "video production",
+      "interview",
+      "event production",
+      "on-location service"
+    ]
+  },
+  "optional_acceptances": [
+    "portfolio_case_study_permission",
+    "marketing_email_consent"
+  ],
+  "audit_fields": [
+    "request_reference",
+    "customer_name",
+    "organization_name",
+    "signer_role",
+    "typed_signature",
+    "email",
+    "selected_package",
+    "selected_services",
+    "displayed_total",
+    "currency",
+    "document_versions",
+    "accepted_at_utc",
+    "ip_address",
+    "user_agent",
+    "referrer",
+    "payment_reference"
+  ]
+}
