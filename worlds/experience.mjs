@@ -31,20 +31,27 @@ class ProductWorld extends HTMLElement{
     const $=s=>shadow.querySelector(s),frame=$('.frame'),stage=$('.stage'),photo=$('.photo'),canvas=$('.surface'),tools=$('.tools'),nav=$('.tabs'),caption=$('.caption'),pills=$('.pills'),hint=$('.hint'),status=$('.sr'),action=$('.action');
     $('link').href=new URL('controls.css',base).href;
     frame.setAttribute('aria-label',info.title+' interactive environment');canvas.setAttribute('aria-label','Drag to look around. Use the arrow keys to rotate, plus and minus to zoom.');canvas.setAttribute('role','img');
-    const guide=mode==='cloud'?[['Use the strategy desk to open the business portfolio.','View businesses'],['Use the material library to view filings and documents.','View documents'],['Use the model table to browse the software portfolio.','View apps and games']]:places[id];const marks=[],tabs=[];let current=-1,view=info.home,engine=null,working=false,visible=false,walkMode=false,expanded=false,automatic=0,quiet=matchMedia('(prefers-reduced-motion: reduce)').matches,unavailable=false;
+    const guide=mode==='cloud'?[['Use the strategy desk to open the business portfolio.','View businesses'],['Use the material library to view filings and documents.','View documents'],['Use the model table to browse the software portfolio.','View apps and games']]:places[id];const marks=[],tabs=[];let current=-1,view=info.home,engine=null,working=false,visible=false,walkMode=false,expanded=false,automatic=0,quiet=matchMedia('(prefers-reduced-motion: reduce)').matches,unavailable=false,illustrated=false,sceneController=null;
     const live=()=>Boolean(engine);const on=(el,event,listener)=>el.addEventListener(event,listener,{signal});
     function make(label,style,icon,group,fn){const b=button(label,style,icon);group.append(b);on(b,'click',fn);return b}
     const expand=make('Expand scene','iconbutton','⛶',$('.top'),()=>toggleExpand(!expanded));
     const enable=make('Enter 3D','mode enable',null,tools,()=>start3D(true));
+    const still=make('Use illustrated views','iconbutton','▧',tools,()=>{
+      illustrated=true;clearTimeout(automatic);
+      sceneController?.abort();sceneController=null;
+      engine=null;stage.classList.remove('live');canvas.tabIndex=-1;
+      walkState(false);toolbar();fallbackPins();enable.focus({preventScroll:true});
+      status.textContent='Illustrated views are active. Choose a station to look closer.';
+    });
     const walking=make('Walk','mode mode-label',null,tools,()=>{if(!engine)return;if(walkMode){select(-1,true);canvas.focus({preventScroll:true});return}engine.walk(view);canvas.focus({preventScroll:true});status.textContent='Walk with W A S D, the arrow keys, or the on-screen movement controls.'});
     const less=make('Zoom out','iconbutton','−',tools,()=>engine?.zoom(1.17)),more=make('Zoom in','iconbutton','+',tools,()=>engine?.zoom(.85));
     const animation=make('Pause scene motion','iconbutton','Ⅱ',tools,()=>{quiet=!quiet;engine?.setMotion(!quiet);setAnimationLabel()});
     function setAnimationLabel(){const label=quiet?'Resume scene motion':'Pause scene motion';animation.textContent=quiet?'▷':'Ⅱ';animation.title=label;animation.setAttribute('aria-label',label);animation.setAttribute('aria-pressed',String(quiet))}
     const moveDefs=[['Turn left','↶',()=>engine?.look(1)],['Move forward','↑',()=>engine?.step(1,0)],['Move backward','↓',()=>engine?.step(-1,0)],['Turn right','↷',()=>engine?.look(-1)]];
     for(const [label,icon,fn] of moveDefs)make(label,'',icon,pills,fn);
-    function walkState(active){walkMode=active;walking.textContent=active?'Exit walk':'Walk';walking.setAttribute('aria-pressed',String(active));pills.hidden=!active;hint.hidden=!engine||active;self.dataset.navigating=active?'walk':'view';}
+    function walkState(active){walkMode=active;walking.textContent=active?'Exit walk':'Walk';walking.setAttribute('aria-pressed',String(active));pills.hidden=!active;hint.hidden=active||(!engine&&!unavailable&&!illustrated);self.dataset.navigating=active?'walk':'view';}
     const self=this;
-    function toolbar(){for(const b of [less,more,walking])b.hidden=!engine;animation.hidden=!engine||matchMedia('(prefers-reduced-motion: reduce)').matches;enable.hidden=Boolean(engine)||unavailable;enable.disabled=working;enable.textContent=working?'Opening 3D…':'Enter 3D';hint.hidden=!engine||walkMode;hint.textContent='Drag to look around';setAnimationLabel();}
+    function toolbar(){still.hidden=!engine;for(const b of [less,more,walking])b.hidden=!engine;animation.hidden=!engine||matchMedia('(prefers-reduced-motion: reduce)').matches;enable.hidden=Boolean(engine)||unavailable;enable.disabled=working;enable.textContent=working?'Opening 3D…':'Enter 3D';hint.hidden=walkMode||(!engine&&!unavailable&&!illustrated);hint.textContent=engine?'Drag to look around':'Illustrated views';setAnimationLabel();}
     function reposition(triples){for(const [i,m] of marks.entries()){const [x,y,front]=triples[i]||[0,0,false];m.hidden=!front||x<.025||x>.975||y<.065||y>.93;m.style.left=x*100+'%';m.style.top=y*100+'%';}}
     function fallbackPins(){if(engine)return;const rect=stage.getBoundingClientRect();if(rect.width<3||rect.height<3)return;const mul=Math.max(rect.width/info.aspect,rect.height),w=mul*info.aspect,h=mul;
       reposition(view.pins.map(([x,y,z])=>[(x*w-(w-rect.width)/2)/rect.width,(y*h-(h-rect.height)/2)/rect.height,z>0]));}
@@ -94,13 +101,13 @@ class ProductWorld extends HTMLElement{
       else ok=performStationAction(id,v.id,document);
       if(!ok){status.textContent='This station opens from the product’s main screen.';caption.textContent=status.textContent}
     });
-    function offline(){engine=null;stage.classList.remove('live');canvas.tabIndex=-1;walkState(false);unavailable=true;toolbar();fallbackPins();hint.hidden=false;hint.textContent='Illustrated views';status.textContent='All three viewpoints are available as illustrations.'}
+    function offline(){sceneController?.abort();sceneController=null;engine=null;stage.classList.remove('live');canvas.tabIndex=-1;walkState(false);unavailable=true;toolbar();fallbackPins();hint.hidden=false;hint.textContent='Illustrated views';status.textContent='All three viewpoints are available as illustrations.'}
     async function start3D(manual){
-      if(working||engine||unavailable||signal.aborted)return;working=true;toolbar();
+      if(working||engine||unavailable||signal.aborted)return;working=true;illustrated=false;const controller=new AbortController();sceneController=controller;toolbar();
       try{
         const {openWorld}=await import('./world-render.mjs');if(signal.aborted)return;
-        engine=await openWorld({canvas,info,asset:new URL('environment.glb',dir).href,view,pins:reposition,changed:walkState,failed:offline,signal});
-        if(signal.aborted){engine.dispose();return}
+        engine=await openWorld({canvas,info,asset:new URL('environment.glb',dir).href,view,pins:reposition,changed:walkState,failed:offline,signal:controller.signal});
+        if(signal.aborted||controller.signal.aborted){engine?.dispose();return}
         engine.go(view);engine.setVisible(visible);engine.setMotion(!quiet);canvas.tabIndex=0;stage.classList.add('live');status.textContent=manual?'3D view ready. Drag to look around or choose a station.':'';
       }catch(e){if(!signal.aborted)offline()}finally{working=false;if(!signal.aborted)toolbar()}
     }
@@ -114,9 +121,9 @@ class ProductWorld extends HTMLElement{
       visible=entry.isIntersecting;engine?.setVisible(visible);
       clearTimeout(automatic);
       const conserve=navigator.connection?.saveData||window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-      if(visible&&!conserve&&!this.hasAttribute('data-intent')&&!engine&&!working)automatic=setTimeout(()=>start3D(false),320);
+      if(visible&&!conserve&&!illustrated&&!unavailable&&!this.hasAttribute('data-intent')&&!engine&&!working)automatic=setTimeout(()=>start3D(false),320);
     },{threshold:.03});io.observe(stage);
-    signal.addEventListener('abort',()=>{clearTimeout(automatic);io.disconnect();ro.disconnect();responses?.();engine?.dispose()},{once:true});
+    signal.addEventListener('abort',()=>{clearTimeout(automatic);io.disconnect();ro.disconnect();responses?.();sceneController?.abort();engine?.dispose()},{once:true});
   }
 }
 if(!customElements.get('ri-world'))customElements.define('ri-world',ProductWorld);
