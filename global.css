@@ -26,3 +26,5 @@
 .select-card:focus-within,.card:focus-within { border-color:#dabc78; }
 @media(max-width:900px) { .top .links { display:none; } .mobile-menu { display:block; position:relative; margin-left:auto; } .mobile-menu summary { cursor:pointer; padding:.6rem 1rem; border:1px solid #a18c59; color:#fff3d8; border-radius:.4rem; } .mobile-menu nav { position:absolute; right:0; top:calc(100% + .4rem); display:grid; min-width:12rem; padding:.4rem; background:#101d2a; border:1px solid #827457; border-radius:.4rem; box-shadow:0 8px 24px #0005; } .mobile-menu nav a { padding:.7rem .8rem; min-height:44px; } .hero-inner { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+#download-estimate[hidden], #download-draft[hidden] { display: none; }
+#download-draft { margin-top: .75rem; }
